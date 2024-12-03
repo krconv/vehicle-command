@@ -308,10 +308,16 @@ func (p *Proxy) loadVehicleAndCommandFromRequest(ctx context.Context, acct *acco
 
 	var car *vehicle.Vehicle
 	bleConnection, err := ble.NewConnection(ctx, vin)
+	if err != nil {
+		log.Error("Error connecting via BLE: %s", err)
+	}
 	if bleConnection != nil && err == nil {
 		log.Info("Using BLE connection for %s", vin)
 		// use ble if available
 		car, err = vehicle.NewVehicle(bleConnection, p.commandKey, p.sessions)
+		if err != nil {
+			log.Error("Error connecting via BLE: %s", err)
+		}
 	}
 
 	if bleConnection == nil || err != nil {
