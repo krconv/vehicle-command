@@ -16,6 +16,7 @@ import (
 	"github.com/teslamotors/vehicle-command/internal/log"
 	"github.com/teslamotors/vehicle-command/pkg/account"
 	"github.com/teslamotors/vehicle-command/pkg/cache"
+	"github.com/teslamotors/vehicle-command/pkg/connector/ble"
 	"github.com/teslamotors/vehicle-command/pkg/connector/inet"
 	"github.com/teslamotors/vehicle-command/pkg/protocol"
 	"github.com/teslamotors/vehicle-command/pkg/vehicle"
@@ -305,7 +306,15 @@ func (p *Proxy) loadVehicleAndCommandFromRequest(ctx context.Context, acct *acco
 		return nil, nil, err
 	}
 
-	car, err := acct.GetVehicle(ctx, vin, p.commandKey, p.sessions)
+	var car *vehicle.Vehicle
+	bleConnection, err := ble.NewConnection(ctx, vin)
+	if bleConnection != nil && err == nil {
+		// use ble if available
+		car, err = vehicle.NewVehicle(bleConnection, p.commandKey, p.sessions)
+	} else {
+		car, err = acct.GetVehicle(ctx, vin, p.commandKey, p.sessions)
+	}
+
 	if err != nil || car == nil {
 		writeJSONError(w, http.StatusInternalServerError, err)
 		return nil, nil, err
